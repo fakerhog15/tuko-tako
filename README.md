@@ -1,14 +1,14 @@
 # VELTRIS
 
 <p align="center">
-  <img src="icon.png?v=12" alt="Veltris" width="260">
+  <img src="icon.png?v=13" alt="Veltris" width="260">
 </p>
 
 A fast, sharp-cornered puzzle game in the style of **Puyo Puyo**. Pair up
 matching square blocks — match **4 or more** in a row to pop them, trigger
 chains for huge points, and beat your high score!
 
-**Play it at:** <https://fakerhog15.github.io/tuko-tako/>
+**Play it at:** <https://fakerhog15.github.io/veltris/>
 
 ## Gameplay
 

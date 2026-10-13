@@ -107,6 +107,23 @@
   var CRT_LABEL = { rf: "CRT + RF", crt: "CRT", off: "OFF" };
   var crtMode = "rf";
 
+  // settings persist under "veltris.*"; old "tukotako.*" keys are migrated once.
+  var STORE_PREFIX = "veltris.";
+  var LEGACY_PREFIX = "tukotako.";
+  function storeGet(key) {
+    try {
+      var v = localStorage.getItem(STORE_PREFIX + key);
+      if (v === null) {
+        v = localStorage.getItem(LEGACY_PREFIX + key);
+        if (v !== null) localStorage.setItem(STORE_PREFIX + key, v);
+      }
+      return v;
+    } catch (e) { return null; }
+  }
+  function storeSet(key, val) {
+    try { localStorage.setItem(STORE_PREFIX + key, val); } catch (e) {}
+  }
+
   function loadCrtMode() {
     try {
       var q = (location.search.match(/[?&]crt=([a-z0-9]+)/i) || [])[1];
@@ -118,7 +135,7 @@
       }
     } catch (e) {}
     try {
-      var s = localStorage.getItem("tukotako.crt");
+      var s = storeGet("crt");
       if (CRT_MODES.indexOf(s) >= 0) return s;
     } catch (e) {}
     return "rf";
@@ -567,12 +584,11 @@
   }
 
   function loadMute() {
-    try { if (localStorage.getItem("tukotako.music") === "off") musicMuted = true; } catch (e) {}
+    if (storeGet("music") === "off") musicMuted = true;
   }
 
   function loadVolume() {
-    var v = NaN;
-    try { v = parseFloat(localStorage.getItem("tukotako.volume")); } catch (e) {}
+    var v = parseFloat(storeGet("volume"));
     if (isFinite(v) && v >= 0 && v <= 1) musicVolume = v;
     applyVolume();
   }
@@ -589,12 +605,12 @@
   function setVolume(v) {
     musicVolume = Math.max(0, Math.min(1, v));
     applyVolume();
-    try { localStorage.setItem("tukotako.volume", String(musicVolume)); } catch (e) {}
+    storeSet("volume", String(musicVolume));
   }
 
   function toggleMute() {
     musicMuted = !musicMuted;
-    try { localStorage.setItem("tukotako.music", musicMuted ? "off" : "on"); } catch (e) {}
+    storeSet("music", musicMuted ? "off" : "on");
     updateMuteBtn();
     if (musicMuted) stopMusic();
     else if (state === "playing" || state === "busy") playMusic();
@@ -1424,7 +1440,7 @@
       e.preventDefault();
       if (!crt) return;
       crtMode = CRT_MODES[(CRT_MODES.indexOf(crtMode) + 1) % CRT_MODES.length];
-      try { localStorage.setItem("tukotako.crt", crtMode); } catch (err) {}
+      storeSet("crt", crtMode);
       updateCrtBtn();
       draw();
     });
