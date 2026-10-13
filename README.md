@@ -1,7 +1,7 @@
 # TUKO TAKO
 
 <p align="center">
-  <img src="icon.png" alt="Tuko Tako" width="260">
+  <img src="icon.png?v=8" alt="Tuko Tako" width="260">
 </p>
 
 A fast, sharp-cornered puzzle game in the style of **Puyo Puyo**. Pair up
@@ -37,12 +37,15 @@ On-screen touch buttons are included for mobile play.
 - One-canvas layout with a **piece preview queue** (next 3) and a **hold** slot.
 - **Ghost piece** drop indicator and active-column highlight.
 - Particle bursts, chain flashes, leveling and a level progress bar.
-- **CRT + RF filter** (WebGL): replicates a `crt-geom` look (screen curvature,
-  aperture-grille shadow mask, scanlines, vignette) together with a
-  `crt-guest-advanced` NTSC/RF look (color fringing, animated RF static,
-  horizontal ringing echo and phosphor afterglow). Toggle it with the
-  **DISPLAY** button in-game; it silently falls back to a plain render if WebGL
-  is unavailable.
+- **Display filter** (WebGL) with three modes, cycled by the **DISPLAY** button
+  in-game (choice is remembered):
+  - **CRT + RF** — full effect: `crt-geom` style screen curvature, aperture-grille
+    shadow mask and scanlines, plus a `crt-guest-advanced` NTSC/RF look with color
+    fringing, animated RF static, horizontal ringing echo and phosphor afterglow.
+  - **CRT** — scanline/mask/curvature only (no RF).
+  - **OFF** — plain, unfiltered render.
+  - Set the initial mode with a URL param, e.g. `?crt=off`, `?crt=crt`, `?crt=rf`.
+  - If WebGL is unavailable the game automatically falls back to a plain render.
 
 ## Sound
 

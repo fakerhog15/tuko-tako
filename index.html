@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Tuko Tako</title>
-<link rel="icon" type="image/png" href="icon.png">
-<link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/png" href="icon.png?v=8">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
   <div id="app">
@@ -19,7 +19,7 @@
         </div>
         <div class="panel">
           <div class="label">DISPLAY</div>
-          <button id="crtBtn" title="Toggle CRT + RF filter">CRT + RF: ON</button>
+          <button id="crtBtn" title="Cycle display filter: CRT + RF / CRT / Off">FILTER: CRT + RF</button>
         </div>
         <div class="controls">
           <p><b>&larr; &rarr;</b> Move</p>
@@ -34,7 +34,7 @@
 
     <div id="overlay" class="show">
       <div class="modal">
-        <img src="icon.png" alt="Tuko Tako" class="modal-icon">
+        <img src="icon.png?v=8" alt="Tuko Tako" class="modal-icon">
         <h2>TUKO TAKO</h2>
         <p class="tag">Match 4 or more squares of the same color.<br>Chain them for a big score!</p>
         <button id="startBtn">START</button>
@@ -54,6 +54,6 @@
   </div>
 
   <audio id="music" src="music.mp3" loop preload="auto"></audio>
-  <script src="game.js"></script>
+  <script src="game.js?v=8"></script>
 </body>
 </html>

@@ -86,11 +86,33 @@
 
   var crt = null;
   var fbCtx = null;
-  var crtOn = false;
+
+  // CRT/RF display modes, cycled by the DISPLAY button and persisted.
+  var CRT_MODES = ["rf", "crt", "off"];
+  var CRT_LABEL = { rf: "CRT + RF", crt: "CRT", off: "OFF" };
+  var crtMode = "rf";
+
+  function loadCrtMode() {
+    try {
+      var q = (location.search.match(/[?&]crt=([a-z0-9]+)/i) || [])[1];
+      if (q) {
+        q = q.toLowerCase();
+        if (q === "1" || q === "on") q = "rf";
+        if (q === "0") q = "off";
+        if (CRT_MODES.indexOf(q) >= 0) return q;
+      }
+    } catch (e) {}
+    try {
+      var s = localStorage.getItem("tukotako.crt");
+      if (CRT_MODES.indexOf(s) >= 0) return s;
+    } catch (e) {}
+    return "rf";
+  }
+
   function initCRT() {
     try { crt = createCRT(boardCanvas, W * DPR, H * DPR); } catch (e) { crt = null; }
     fbCtx = crt ? null : boardCanvas.getContext("2d");
-    crtOn = !!crt;
+    crtMode = crt ? loadCrtMode() : "off";
   }
 
   // ---------- helpers ----------
@@ -538,7 +560,11 @@
   ].join("\n");
 
   var CRT_FRAG = [
+    "#ifdef GL_FRAGMENT_PRECISION_HIGH",
     "precision highp float;",
+    "#else",
+    "precision mediump float;",
+    "#endif",
     "varying vec2 vUv;",
     "uniform sampler2D uScene;",
     "uniform sampler2D uPrev;",
@@ -550,6 +576,7 @@
     "uniform float uMask;",
     "uniform float uRfNoise;",
     "uniform float uFringing;",
+    "uniform float uEcho;",
     "uniform float uAfterglow;",
     "uniform float uVignette;",
     "uniform float uGamma;",
@@ -570,8 +597,8 @@
     "  s.r = texture2D(uScene, uv + vec2(off, 0.0)).r;",
     "  s.g = texture2D(uScene, uv).g;",
     "  s.b = texture2D(uScene, uv - vec2(off, 0.0)).b;",
-    "  s += texture2D(uScene, uv + vec2(px * 2.0, 0.0)).rgb * 0.06;",
-    "  s -= texture2D(uScene, uv - vec2(px * 3.0, 0.0)).rgb * 0.045;",
+    "  s += texture2D(uScene, uv + vec2(px * 2.0, 0.0)).rgb * 0.06 * uEcho;",
+    "  s -= texture2D(uScene, uv - vec2(px * 3.0, 0.0)).rgb * 0.045 * uEcho;",
     "  s = clamp(s, 0.0, 1.0);",
     "  float mx = mod(gl_FragCoord.x, 3.0);",
     "  vec3 maskCol = mx < 1.0 ? vec3(1.0,0.0,0.0) : (mx < 2.0 ? vec3(0.0,1.0,0.0) : vec3(0.0,0.0,1.0));",
@@ -650,12 +677,12 @@
 
     var U = {};
     ["uScene", "uPrev", "uRes", "uTime", "uBlit", "uCurvature", "uScanline",
-     "uMask", "uRfNoise", "uFringing", "uAfterglow", "uVignette", "uGamma"]
+     "uMask", "uRfNoise", "uFringing", "uEcho", "uAfterglow", "uVignette", "uGamma"]
       .forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
 
     var params = {
       curvature: 0.5, scanline: 0.22, mask: 0.22, rfNoise: 0.10,
-      fringing: 1.0, afterglow: 0.35, vignette: 0.45, gamma: 1.25
+      fringing: 1.0, echo: 1.0, afterglow: 0.35, vignette: 0.45, gamma: 1.25
     };
 
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -672,11 +699,11 @@
       gl: gl,
       params: params,
       setParams: function (p) { for (var k in p) params[k] = p[k]; },
-      render: function (sceneCanvas, time, apply) {
+      render: function (sceneCanvas, time, mode) {
         gl.bindTexture(gl.TEXTURE_2D, sceneTex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sceneCanvas);
 
-        if (!apply) {
+        if (mode === "off") {
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.viewport(0, 0, w, h);
           bindScene(sceneTex, 0);
@@ -684,6 +711,8 @@
           drawQuad();
           return;
         }
+
+        var rf = mode === "rf";
 
         // pass 1: effects -> write texture
         gl.bindFramebuffer(gl.FRAMEBUFFER, writeFbo);
@@ -699,9 +728,10 @@
         gl.uniform1f(U.uCurvature, params.curvature);
         gl.uniform1f(U.uScanline, params.scanline);
         gl.uniform1f(U.uMask, params.mask);
-        gl.uniform1f(U.uRfNoise, params.rfNoise);
-        gl.uniform1f(U.uFringing, params.fringing);
-        gl.uniform1f(U.uAfterglow, params.afterglow);
+        gl.uniform1f(U.uRfNoise, rf ? params.rfNoise : 0.0);
+        gl.uniform1f(U.uFringing, rf ? params.fringing : 0.0);
+        gl.uniform1f(U.uEcho, rf ? params.echo : 0.0);
+        gl.uniform1f(U.uAfterglow, rf ? params.afterglow : 0.0);
         gl.uniform1f(U.uVignette, params.vignette);
         gl.uniform1f(U.uGamma, params.gamma);
         drawQuad();
@@ -723,7 +753,7 @@
 
   function present() {
     if (crt) {
-      crt.render(scene, performance.now() / 1000, crtOn);
+      crt.render(scene, performance.now() / 1000, crtMode);
     } else if (fbCtx) {
       fbCtx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
       fbCtx.drawImage(scene, 0, 0);
@@ -1034,11 +1064,15 @@
       crtBtn.textContent = "CRT: UNAVAILABLE";
       crtBtn.disabled = true;
     } else {
-      crtBtn.textContent = "CRT + RF: ON";
+      var updateCrtBtn = function () {
+        crtBtn.textContent = "FILTER: " + CRT_LABEL[crtMode];
+      };
+      updateCrtBtn();
       crtBtn.addEventListener("click", function (e) {
         e.preventDefault();
-        crtOn = !crtOn;
-        crtBtn.textContent = "CRT + RF: " + (crtOn ? "ON" : "OFF");
+        crtMode = CRT_MODES[(CRT_MODES.indexOf(crtMode) + 1) % CRT_MODES.length];
+        try { localStorage.setItem("tukotako.crt", crtMode); } catch (err) {}
+        updateCrtBtn();
         draw();
       });
     }
