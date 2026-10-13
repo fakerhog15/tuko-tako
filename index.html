@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Tuko Tako</title>
-<link rel="icon" type="image/png" href="icon.png?v=9">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="icon" type="image/png" href="icon.png?v=10">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
   <div id="app">
@@ -17,6 +17,11 @@
           <div class="label">MUSIC</div>
           <button id="musicBtn" title="Switch track">TRACK: MAIN MENU</button>
           <button id="muteBtn" title="Turn music on/off">MUSIC: ON</button>
+          <label class="vol" for="volumeSlider">
+            <span>VOLUME <b id="volumeVal">50%</b></span>
+            <input id="volumeSlider" type="range" min="0" max="100" step="1" value="50"
+                   title="Music volume" aria-label="Music volume">
+          </label>
         </div>
         <div class="panel">
           <div class="label">DISPLAY</div>
@@ -37,7 +42,7 @@
 
     <div id="overlay" class="show">
       <div class="modal">
-        <img src="icon.png?v=9" alt="Tuko Tako" class="modal-icon">
+        <img src="icon.png?v=10" alt="Tuko Tako" class="modal-icon">
         <h2>TUKO TAKO</h2>
         <p class="tag">Match 4 or more squares of the same color.<br>Chain them for a big score!</p>
         <button id="startBtn">START</button>
@@ -58,6 +63,6 @@
   </div>
 
   <audio id="music" src="music.mp3" loop preload="auto"></audio>
-  <script src="game.js?v=9"></script>
+  <script src="game.js?v=10"></script>
 </body>
 </html>

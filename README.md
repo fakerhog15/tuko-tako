@@ -1,7 +1,7 @@
 # TUKO TAKO
 
 <p align="center">
-  <img src="icon.png?v=9" alt="Tuko Tako" width="260">
+  <img src="icon.png?v=10" alt="Tuko Tako" width="260">
 </p>
 
 A fast, sharp-cornered puzzle game in the style of **Puyo Puyo**. Pair up
@@ -61,6 +61,8 @@ Six background tracks:
 
 - Cycle between tracks with the **TRACK** button in-game.
 - Turn music on/off with the **MUSIC** button (choice is remembered).
+- Drag the **VOLUME** slider to set the music level from 0–100%; the setting is
+  remembered between sessions.
 
 Switch tracks anytime during play. All in-game sound effects (move, rotate,
 drop, hold, clear, chain, game over) are synthesized in the browser with a

@@ -62,6 +62,8 @@
   var musicBtn = document.getElementById("musicBtn");
   var muteBtn = document.getElementById("muteBtn");
   var pauseBtn = document.getElementById("pauseBtn");
+  var volumeSlider = document.getElementById("volumeSlider");
+  var volumeVal = document.getElementById("volumeVal");
   var crtBtn = document.getElementById("crtBtn");
   var stage = document.getElementById("stage");
   var audioCtx = null;
@@ -76,6 +78,7 @@
   ];
   var trackIndex = 0;
   var musicMuted = false;
+  var musicVolume = 0.5;
 
   var DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -502,7 +505,7 @@
     if (music.src.indexOf(TRACKS[trackIndex].src) === -1) {
       music.src = TRACKS[trackIndex].src;
     }
-    music.volume = 0.5;
+    music.volume = musicVolume;
     var p = music.play();
     if (p && p.catch) p.catch(function () {});
   }
@@ -521,6 +524,28 @@
 
   function loadMute() {
     try { if (localStorage.getItem("tukotako.music") === "off") musicMuted = true; } catch (e) {}
+  }
+
+  function loadVolume() {
+    var v = NaN;
+    try { v = parseFloat(localStorage.getItem("tukotako.volume")); } catch (e) {}
+    if (isFinite(v) && v >= 0 && v <= 1) musicVolume = v;
+    applyVolume();
+  }
+
+  function applyVolume() {
+    music.volume = musicVolume;
+    if (volumeVal) volumeVal.textContent = Math.round(musicVolume * 100) + "%";
+    if (volumeSlider) volumeSlider.value = String(Math.round(musicVolume * 100));
+    var off = musicVolume <= 0.001;
+    if (volumeSlider) volumeSlider.classList.toggle("is-off", off);
+    if (volumeVal) volumeVal.classList.toggle("is-off", off);
+  }
+
+  function setVolume(v) {
+    musicVolume = Math.max(0, Math.min(1, v));
+    applyVolume();
+    try { localStorage.setItem("tukotako.volume", String(musicVolume)); } catch (e) {}
   }
 
   function toggleMute() {
@@ -1120,6 +1145,12 @@
       toggleMute();
     });
     updateMuteBtn();
+  }
+  if (volumeSlider) {
+    volumeSlider.addEventListener("input", function (e) {
+      setVolume((e.target.valueAsNumber != null ? e.target.valueAsNumber : parseFloat(e.target.value)) / 100);
+    });
+    loadVolume();
   }
   if (pauseBtn) {
     pauseBtn.addEventListener("click", function (e) {
