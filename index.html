@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Tuko Tako</title>
-<link rel="icon" type="image/png" href="icon.png?v=10">
-<link rel="stylesheet" href="style.css?v=10">
+<title>Veltris</title>
+<link rel="icon" type="image/png" href="icon.png?v=12">
+<link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
   <div id="app">
     <div id="stage">
       <canvas id="board" width="576" height="660"></canvas>
       <div id="hud">
-        <h1 class="logo">TUKO<span>TAKO</span></h1>
+        <h1 class="logo">VEL<span>TRIS</span></h1>
         <div class="panel">
           <div class="label">MUSIC</div>
           <button id="musicBtn" title="Switch track">TRACK: MAIN MENU</button>
@@ -27,6 +27,8 @@
           <div class="label">DISPLAY</div>
           <button id="crtBtn" title="Cycle display filter: CRT + RF / CRT / Off">FILTER: CRT + RF</button>
           <button id="pauseBtn" title="Pause / resume (Enter)">PAUSE</button>
+          <div class="stat" id="rendererInfo">GPU: &mdash;</div>
+          <div class="stat" id="fpsInfo">&mdash; FPS</div>
         </div>
         <div class="controls">
           <p><b>&larr; &rarr;</b> Move</p>
@@ -42,8 +44,8 @@
 
     <div id="overlay" class="show">
       <div class="modal">
-        <img src="icon.png?v=10" alt="Tuko Tako" class="modal-icon">
-        <h2>TUKO TAKO</h2>
+        <img src="icon.png?v=12" alt="Veltris" class="modal-icon">
+        <h2>VELTRIS</h2>
         <p class="tag">Match 4 or more squares of the same color.<br>Chain them for a big score!</p>
         <button id="startBtn">START</button>
         <p class="hint">Music plays while you play.</p>
@@ -63,6 +65,6 @@
   </div>
 
   <audio id="music" src="music.mp3" loop preload="auto"></audio>
-  <script src="game.js?v=10"></script>
+  <script src="game.js?v=12"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
-# TUKO TAKO
+# VELTRIS
 
 <p align="center">
-  <img src="icon.png?v=10" alt="Tuko Tako" width="260">
+  <img src="icon.png?v=12" alt="Veltris" width="260">
 </p>
 
 A fast, sharp-cornered puzzle game in the style of **Puyo Puyo**. Pair up
@@ -37,8 +37,9 @@ On-screen touch buttons are included for mobile play.
 
 - One-canvas layout with a **piece preview queue** (next 3) and a **hold** slot.
 - **Ghost piece** drop indicator and active-column highlight.
+- Smooth sub-cell falling animation and a live **FPS** readout.
 - Particle bursts, chain flashes, leveling and a level progress bar.
-- **Display filter** (WebGL) with three modes, cycled by the **DISPLAY** button
+- **Display filter** with three modes, cycled by the **DISPLAY** button
   in-game (choice is remembered):
   - **CRT + RF** — full effect: `crt-geom` style screen curvature, aperture-grille
     shadow mask and scanlines, plus a `crt-guest-advanced` NTSC/RF look with color
@@ -46,7 +47,9 @@ On-screen touch buttons are included for mobile play.
   - **CRT** — scanline/mask/curvature only (no RF).
   - **OFF** — plain, unfiltered render.
   - Set the initial mode with a URL param, e.g. `?crt=off`, `?crt=crt`, `?crt=rf`.
-  - If WebGL is unavailable the game automatically falls back to a plain render.
+  - The effect runs on **WebGPU** (the Vulkan backend on Linux) and automatically
+    falls back to **WebGL**, then to a plain 2D render, if unavailable. The active
+    backend is shown as **GPU:** in the DISPLAY panel.
 
 ## Sound
 

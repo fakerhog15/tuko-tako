@@ -45,6 +45,8 @@
   var clearFlash = false;
   var particles = [];
   var dropTimer = 0;
+  var fpsFrames = 0;
+  var fpsStart = 0;
   var lastTime = 0;
   var softDrop = false;
   var rafId = null;
@@ -96,6 +98,9 @@
 
   var crt = null;
   var fbCtx = null;
+  var backend = "canvas";
+  var rendererInfo = document.getElementById("rendererInfo");
+  var fpsInfo = document.getElementById("fpsInfo");
 
   // CRT/RF display modes, cycled by the DISPLAY button and persisted.
   var CRT_MODES = ["rf", "crt", "off"];
@@ -119,10 +124,49 @@
     return "rf";
   }
 
-  function initCRT() {
-    try { crt = createCRT(boardCanvas, W * DPR, H * DPR); } catch (e) { crt = null; }
-    fbCtx = crt ? null : boardCanvas.getContext("2d");
-    crtMode = crt ? loadCrtMode() : "off";
+  function updateCrtBtn() {
+    if (!crtBtn) return;
+    if (!crt) {
+      crtBtn.textContent = "FILTER: UNAVAILABLE";
+      crtBtn.disabled = true;
+      return;
+    }
+    crtBtn.disabled = false;
+    crtBtn.textContent = "FILTER: " + CRT_LABEL[crtMode];
+  }
+
+  function backendLabel() {
+    if (backend === "webgpu") {
+      var linux = typeof navigator !== "undefined" && /linux/i.test(navigator.platform || navigator.userAgent || "");
+      return "GPU: WebGPU" + (linux ? " (Vulkan)" : "");
+    }
+    if (backend === "webgl") return "GPU: WebGL";
+    return "GPU: 2D (fallback)";
+  }
+
+  function updateRendererInfo() {
+    if (rendererInfo) rendererInfo.textContent = backendLabel();
+  }
+
+  function initRenderer() {
+    crtMode = loadCrtMode();
+    return Promise.resolve()
+      .then(function () { return createCRTWebGPU(boardCanvas, W * DPR, H * DPR); })
+      .catch(function () { return null; })
+      .then(function (r) {
+        crt = r;
+        if (crt) { backend = crt.backend; return; }
+        try { crt = createCRTGL(boardCanvas, W * DPR, H * DPR); } catch (e) { crt = null; }
+        if (crt) { backend = crt.backend; return; }
+        crtMode = "off";
+        backend = "canvas";
+        fbCtx = boardCanvas.getContext("2d");
+      })
+      .then(function () {
+        updateCrtBtn();
+        updateRendererInfo();
+        draw();
+      });
   }
 
   // ---------- helpers ----------
@@ -575,6 +619,8 @@
       state = "playing";
       playMusic();
       lastTime = performance.now();
+      fpsStart = lastTime;
+      fpsFrames = 0;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(loop);
     }
@@ -613,6 +659,8 @@
     ensureAudio();
     playMusic();
     lastTime = performance.now();
+    fpsStart = lastTime;
+    fpsFrames = 0;
     if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(loop);
   }
@@ -687,8 +735,8 @@
     "}"
   ].join("\n");
 
-  function createCRT(canvas, w, h) {
-    var gl = canvas.getContext("webgl", { alpha: false, antialias: false, preserveDrawingBuffer: false }) ||
+  function createCRTGL(canvas, w, h) {
+    var gl = canvas.getContext("webgl", { alpha: false, antialias: false, preserveDrawingBuffer: false, desynchronized: true }) ||
              canvas.getContext("experimental-webgl", { alpha: false });
     if (!gl) return null;
 
@@ -765,6 +813,7 @@
 
     return {
       gl: gl,
+      backend: "webgl",
       params: params,
       setParams: function (p) { for (var k in p) params[k] = p[k]; },
       render: function (sceneCanvas, time, mode) {
@@ -819,6 +868,203 @@
     };
   }
 
+  // ---------- CRT + RF post-process (WebGPU) ----------
+  // On Linux this runs on the Vulkan backend via Dawn, giving a low-overhead
+  // path for the per-pixel CRT + RF effect. Falls back to WebGL when absent.
+  var CRT_WGSL = [
+    "struct U {",
+    "  res: vec2<f32>,",
+    "  time: f32,",
+    "  curvature: f32,",
+    "  scanline: f32,",
+    "  mask: f32,",
+    "  rfNoise: f32,",
+    "  fringing: f32,",
+    "  echo: f32,",
+    "  afterglow: f32,",
+    "  vignette: f32,",
+    "  gamma: f32,",
+    "};",
+    "@group(0) @binding(0) var samp: sampler;",
+    "@group(0) @binding(1) var sceneTex: texture_2d<f32>;",
+    "@group(0) @binding(2) var prevTex: texture_2d<f32>;",
+    "@group(0) @binding(3) var<uniform> u: U;",
+    "fn hash(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(41.0, 289.0))) * 45758.5453); }",
+    "@vertex fn vs(@builtin(vertex_index) vi: u32) -> @builtin(position) vec4<f32> {",
+    "  var p = array<vec2<f32>, 4>(vec2<f32>(-1.0,-1.0), vec2<f32>(1.0,-1.0), vec2<f32>(-1.0,1.0), vec2<f32>(1.0,1.0));",
+    "  return vec4<f32>(p[vi], 0.0, 1.0);",
+    "}",
+    "@fragment fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {",
+    "  let res = u.res;",
+    "  var uv = fc.xy / res;",
+    "  var c = uv * 2.0 - 1.0;",
+    "  let r2 = dot(c, c);",
+    "  c = c * (1.0 + u.curvature * 0.14 * r2);",
+    "  uv = c * 0.5 + 0.5;",
+    "  let px = 1.0 / res.x;",
+    "  let off = u.fringing * 1.6 * px;",
+    "  var s: vec3<f32>;",
+    "  s.r = textureSample(sceneTex, samp, uv + vec2<f32>(off, 0.0)).r;",
+    "  s.g = textureSample(sceneTex, samp, uv).g;",
+    "  s.b = textureSample(sceneTex, samp, uv - vec2<f32>(off, 0.0)).b;",
+    "  s = s + textureSample(sceneTex, samp, uv + vec2<f32>(px * 2.0, 0.0)).rgb * (0.06 * u.echo);",
+    "  s = s - textureSample(sceneTex, samp, uv - vec2<f32>(px * 3.0, 0.0)).rgb * (0.045 * u.echo);",
+    "  s = clamp(s, vec3<f32>(0.0), vec3<f32>(1.0));",
+    "  let mx = fc.x - floor(fc.x / 3.0) * 3.0;",
+    "  var maskCol = vec3<f32>(0.0, 0.0, 1.0);",
+    "  if (mx < 1.0) { maskCol = vec3<f32>(1.0, 0.0, 0.0); } else if (mx < 2.0) { maskCol = vec3<f32>(0.0, 1.0, 0.0); }",
+    "  s = s * mix(vec3<f32>(1.0), maskCol * 2.4, vec3<f32>(u.mask));",
+    "  let scan = 0.5 + 0.5 * sin(uv.y * res.y * 3.14159265);",
+    "  s = s * (1.0 - u.scanline * scan);",
+    "  let n = hash(fc.xy + vec2<f32>(u.time * 61.0, u.time * 97.0));",
+    "  let streak = hash(vec2<f32>(fc.y, floor(u.time * 30.0)));",
+    "  s = s + vec3<f32>((n - 0.5) * u.rfNoise * 0.6 + (streak - 0.5) * u.rfNoise * 0.3);",
+    "  s = clamp(s, vec3<f32>(0.0), vec3<f32>(1.0));",
+    "  let prev = textureSample(prevTex, samp, uv).rgb;",
+    "  s = max(s, prev * u.afterglow);",
+    "  let v = uv - vec2<f32>(0.5);",
+    "  let vig = 1.0 - smoothstep(0.25, 0.95, dot(v, v) * 2.2);",
+    "  s = s * mix(1.0, vig, u.vignette);",
+    "  s = pow(s, vec3<f32>(1.0 / u.gamma));",
+    "  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return vec4<f32>(0.0, 0.0, 0.0, 1.0); }",
+    "  return vec4<f32>(s, 1.0);",
+    "}"
+  ].join("\n");
+
+  var BLIT_WGSL = [
+    "@group(0) @binding(0) var samp: sampler;",
+    "@group(0) @binding(1) var tex: texture_2d<f32>;",
+    "@vertex fn vs(@builtin(vertex_index) vi: u32) -> @builtin(position) vec4<f32> {",
+    "  var p = array<vec2<f32>, 4>(vec2<f32>(-1.0,-1.0), vec2<f32>(1.0,-1.0), vec2<f32>(-1.0,1.0), vec2<f32>(1.0,1.0));",
+    "  return vec4<f32>(p[vi], 0.0, 1.0);",
+    "}",
+    "@fragment fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {",
+    "  let d = vec2<f32>(textureDimensions(tex));",
+    "  return vec4<f32>(textureSample(tex, samp, fc.xy / d).rgb, 1.0);",
+    "}"
+  ].join("\n");
+
+  function createCRTWebGPU(canvas, w, h) {
+    if (typeof navigator === "undefined" || !navigator.gpu) return Promise.resolve(null);
+    return navigator.gpu.requestAdapter().then(function (adapter) {
+      if (!adapter) return null;
+      return adapter.requestDevice().then(function (device) {
+        if (!device) return null;
+        var usage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT;
+        var size = { width: w, height: h };
+
+        var sampler = device.createSampler({
+          minFilter: "linear", magFilter: "linear",
+          addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge"
+        });
+        var uniformBuf = device.createBuffer({ size: 12 * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+        function makeTex() { return device.createTexture({ size: size, format: "rgba8unorm", usage: usage }); }
+        var sceneTex = makeTex(), prevTex = makeTex(), writeTex = makeTex();
+        var textures = [prevTex, writeTex];
+
+        var fxModule = device.createShaderModule({ code: CRT_WGSL });
+        var blitModule = device.createShaderModule({ code: BLIT_WGSL });
+
+        var fxPipeline = device.createRenderPipeline({
+          layout: "auto",
+          vertex: { module: fxModule, entryPoint: "vs" },
+          fragment: { module: fxModule, entryPoint: "fs", targets: [{ format: "rgba8unorm" }] },
+          primitive: { topology: "triangle-strip" }
+        });
+        var canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+        var blitPipeline = device.createRenderPipeline({
+          layout: "auto",
+          vertex: { module: blitModule, entryPoint: "vs" },
+          fragment: { module: blitModule, entryPoint: "fs", targets: [{ format: canvasFormat }] },
+          primitive: { topology: "triangle-strip" }
+        });
+
+        var fxFpLayout = fxPipeline.getBindGroupLayout(0);
+        var blitLayout = blitPipeline.getBindGroupLayout(0);
+        function fxBind(prev) {
+          return device.createBindGroup({
+            layout: fxFpLayout,
+            entries: [
+              { binding: 0, resource: sampler },
+              { binding: 1, resource: sceneTex.createView() },
+              { binding: 2, resource: prev.createView() },
+              { binding: 3, resource: { buffer: uniformBuf } }
+            ]
+          });
+        }
+        function blitBind(tex) {
+          return device.createBindGroup({
+            layout: blitLayout,
+            entries: [
+              { binding: 0, resource: sampler },
+              { binding: 1, resource: tex.createView() }
+            ]
+          });
+        }
+        var fxBinds = [fxBind(prevTex), fxBind(writeTex)];
+        var blitScene = blitBind(sceneTex);
+        var blitTex = [blitBind(prevTex), blitBind(writeTex)];
+
+        // Only claim the canvas after everything else succeeded.
+        var ctx = canvas.getContext("webgpu");
+        if (!ctx) return null;
+        ctx.configure({ device: device, format: canvasFormat, alphaMode: "opaque" });
+
+        var cur = 0;
+        var params = {
+          curvature: 0.5, scanline: 0.22, mask: 0.22, rfNoise: 0.10,
+          fringing: 1.0, echo: 1.0, afterglow: 0.35, vignette: 0.45, gamma: 1.25
+        };
+        var uData = new Float32Array(12);
+
+        return {
+          device: device,
+          backend: "webgpu",
+          params: params,
+          setParams: function (p) { for (var k in p) params[k] = p[k]; },
+          render: function (sceneCanvas, time, mode) {
+            device.queue.copyExternalImageToTexture({ source: sceneCanvas }, { texture: sceneTex }, [w, h]);
+            var enc = device.createCommandEncoder();
+
+            if (mode === "off") {
+              var p0 = enc.beginRenderPass({ colorAttachments: [{
+                view: ctx.getCurrentTexture().createView(),
+                clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: "clear", storeOp: "store"
+              }] });
+              p0.setPipeline(blitPipeline); p0.setBindGroup(0, blitScene); p0.draw(4); p0.end();
+              device.queue.submit([enc.finish()]);
+              return;
+            }
+
+            var rf = mode === "rf";
+            uData[0] = w; uData[1] = h; uData[2] = time;
+            uData[3] = params.curvature; uData[4] = params.scanline; uData[5] = params.mask;
+            uData[6] = rf ? params.rfNoise : 0; uData[7] = rf ? params.fringing : 0;
+            uData[8] = rf ? params.echo : 0; uData[9] = rf ? params.afterglow : 0;
+            uData[10] = params.vignette; uData[11] = params.gamma;
+            device.queue.writeBuffer(uniformBuf, 0, uData);
+
+            var targetIdx = 1 - cur;
+            var p1 = enc.beginRenderPass({ colorAttachments: [{
+              view: textures[targetIdx].createView(),
+              clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: "clear", storeOp: "store"
+            }] });
+            p1.setPipeline(fxPipeline); p1.setBindGroup(0, fxBinds[cur]); p1.draw(4); p1.end();
+
+            var p2 = enc.beginRenderPass({ colorAttachments: [{
+              view: ctx.getCurrentTexture().createView(),
+              clearValue: { r: 0, g: 0, b: 0, a: 1 }, loadOp: "clear", storeOp: "store"
+            }] });
+            p2.setPipeline(blitPipeline); p2.setBindGroup(0, blitTex[targetIdx]); p2.draw(4); p2.end();
+
+            device.queue.submit([enc.finish()]);
+            cur = targetIdx;
+          }
+        };
+      });
+    });
+  }
+
   function present() {
     if (crt) {
       crt.render(scene, performance.now() / 1000, crtMode);
@@ -827,8 +1073,6 @@
       fbCtx.drawImage(scene, 0, 0);
     }
   }
-
-  initCRT();
 
   // ---------- rendering ----------
   function drawSquare(x, y, size, fill, edge) {
@@ -856,6 +1100,14 @@
   function draw() {
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.clearRect(0, 0, W, H);
+
+    // smooth-fall interpolation: nudge the active pair toward its next row
+    var fallFrac = 0;
+    if (piece && state === "playing" && !collidesXY(piece.x, piece.y + 1, piece.rot)) {
+      var iv = dropInterval();
+      if (iv > 0) fallFrac = Math.min(0.999, dropTimer / iv);
+    }
+    var fallY = fallFrac * CELL;
 
     // dark bands
     ctx.fillStyle = "#000";
@@ -930,7 +1182,9 @@
     // active pair
     if (piece) {
       cellsOf(piece).forEach(function (cell) {
-        if (cell.y >= 0) drawBoardCell(cell.color, cell.x, cell.y);
+        if (cell.y >= 0) {
+          drawSquare(GX + cell.x * CELL, GY + cell.y * CELL + fallY, CELL, COLORS[cell.color].fill, COLORS[cell.color].edge);
+        }
       });
     }
 
@@ -1007,6 +1261,13 @@
     if (state !== "playing") return;
     var dt = Math.min(0.05, (t - lastTime) / 1000);
     lastTime = t;
+
+    fpsFrames++;
+    if (t - fpsStart >= 500) {
+      if (fpsInfo) fpsInfo.textContent = Math.round(fpsFrames * 1000 / (t - fpsStart)) + " FPS";
+      fpsFrames = 0;
+      fpsStart = t;
+    }
 
     updatePieceInput(dt);
     updateParticles(dt);
@@ -1159,22 +1420,14 @@
     });
   }
   if (crtBtn) {
-    if (!crt) {
-      crtBtn.textContent = "CRT: UNAVAILABLE";
-      crtBtn.disabled = true;
-    } else {
-      var updateCrtBtn = function () {
-        crtBtn.textContent = "FILTER: " + CRT_LABEL[crtMode];
-      };
+    crtBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (!crt) return;
+      crtMode = CRT_MODES[(CRT_MODES.indexOf(crtMode) + 1) % CRT_MODES.length];
+      try { localStorage.setItem("tukotako.crt", crtMode); } catch (err) {}
       updateCrtBtn();
-      crtBtn.addEventListener("click", function (e) {
-        e.preventDefault();
-        crtMode = CRT_MODES[(CRT_MODES.indexOf(crtMode) + 1) % CRT_MODES.length];
-        try { localStorage.setItem("tukotako.crt", crtMode); } catch (err) {}
-        updateCrtBtn();
-        draw();
-      });
-    }
+      draw();
+    });
   }
 
   // boot
@@ -1183,4 +1436,5 @@
   emptyBoard();
   refillQueue();
   draw();
+  initRenderer();
 })();

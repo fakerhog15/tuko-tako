@@ -150,6 +150,15 @@ button:active { transform: translateY(2px); }
 #crtBtn:disabled { color: #666; border-color: #444; cursor: default; }
 #crtBtn:disabled:hover { background: #111; color: #666; }
 
+.stat {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #808080;
+  text-align: center;
+}
+#fpsInfo { color: #ffe000; }
+
 .vol {
   display: block;
   margin-top: 8px;
