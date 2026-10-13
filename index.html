@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tuko Tako</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="stage">
+      <canvas id="board" width="360" height="720"></canvas>
+      <div id="hud">
+        <h1 class="logo">TUKO<span>TAKO</span></h1>
+        <div class="panel">
+          <div class="label">SCORE</div>
+          <div id="score" class="value">0</div>
+        </div>
+        <div class="panel">
+          <div class="label">CHAIN</div>
+          <div id="chain" class="value">-</div>
+        </div>
+        <div class="panel">
+          <div class="label">NEXT</div>
+          <canvas id="next" width="120" height="180"></canvas>
+        </div>
+        <div class="controls">
+          <p><b>&larr; &rarr;</b> Move</p>
+          <p><b>&uarr;</b> / <b>X</b> Rotate</p>
+          <p><b>Z</b> Rotate CCW</p>
+          <p><b>&darr;</b> Soft drop</p>
+          <p><b>Space</b> Hard drop</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="overlay" class="show">
+      <div class="modal">
+        <h2>TUKO TAKO</h2>
+        <p class="tag">Match 4 or more squares of the same color.<br>Chain them for a big score!</p>
+        <button id="startBtn">START</button>
+        <p class="hint">Music plays while you play.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="touch">
+    <button data-act="left">&#9664;</button>
+    <button data-act="rotL">&#8630;</button>
+    <button data-act="rotR">&#8631;</button>
+    <button data-act="right">&#9654;</button>
+    <button data-act="down">&#9660;</button>
+    <button data-act="drop">DROP</button>
+  </div>
+
+  <audio id="music" src="music.mp3" loop preload="auto"></audio>
+  <script src="game.js"></script>
+</body>
+</html>
