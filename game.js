@@ -36,6 +36,14 @@
   var overlay = document.getElementById("overlay");
   var startBtn = document.getElementById("startBtn");
   var music = document.getElementById("music");
+  var musicBtn = document.getElementById("musicBtn");
+  var audioCtx = null;
+
+  var TRACKS = [
+    { name: "MAIN MENU", src: "music.mp3" },
+    { name: "SNES RAINBOW ROAD", src: "music2.mp3" }
+  ];
+  var trackIndex = 0;
 
   function emptyBoard() {
     board = [];
@@ -225,6 +233,7 @@
     state = "over";
     piece = null;
     stopMusic();
+    gameOverSound();
     overlay.querySelector(".modal").innerHTML =
       '<h2>GAME OVER</h2>' +
       '<p class="tag">Final score: <b style="color:#ffe000">' + score.toLocaleString() + '</b></p>' +
@@ -244,6 +253,7 @@
     overlay.classList.remove("show");
     state = "playing";
     spawnPiece();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
     playMusic();
     lastTime = performance.now();
     if (rafId) cancelAnimationFrame(rafId);
@@ -251,6 +261,9 @@
   }
 
   function playMusic() {
+    if (music.src.indexOf(TRACKS[trackIndex].src) === -1) {
+      music.src = TRACKS[trackIndex].src;
+    }
     music.volume = 0.55;
     var p = music.play();
     if (p && p.catch) p.catch(function () {});
@@ -258,6 +271,41 @@
 
   function stopMusic() {
     try { music.pause(); } catch (e) {}
+  }
+
+  function updateMusicBtn() {
+    if (musicBtn) musicBtn.textContent = "MUSIC: " + TRACKS[trackIndex].name;
+  }
+
+  function cycleTrack(e) {
+    if (e.preventDefault) e.preventDefault();
+    trackIndex = (trackIndex + 1) % TRACKS.length;
+    music.src = TRACKS[trackIndex].src;
+    if (state === "playing" || state === "busy") playMusic();
+    updateMusicBtn();
+  }
+
+  function gameOverSound() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      var now = audioCtx.currentTime;
+      var notes = [392, 330, 262, 196, 131];
+      notes.forEach(function (freq, i) {
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = "square";
+        osc.frequency.value = freq;
+        var t = now + i * 0.18;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      });
+    } catch (e) {}
   }
 
   // ---------- rendering ----------
@@ -431,6 +479,10 @@
   });
 
   startBtn.addEventListener("click", startGame);
+  if (musicBtn) {
+    musicBtn.addEventListener("click", cycleTrack);
+    updateMusicBtn();
+  }
 
   // boot
   emptyBoard();

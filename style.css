@@ -105,6 +105,14 @@ html, body {
   max-width: 420px;
   background: #000;
 }
+.modal-icon {
+  display: block;
+  width: 180px;
+  height: auto;
+  margin: 0 auto 16px;
+  border: 3px solid var(--line);
+  image-rendering: pixelated;
+}
 .modal h2 {
   font-size: 40px;
   letter-spacing: 6px;
@@ -126,6 +134,17 @@ button {
 }
 button:hover { background: #fff; }
 button:active { transform: translateY(2px); }
+
+#musicBtn {
+  width: 100%;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 8px 6px;
+  color: #fff;
+  background: #111;
+  border: 2px solid #fff;
+}
+#musicBtn:hover { background: #ffe000; color: #000; }
 
 #touch {
   display: none;

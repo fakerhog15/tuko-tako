@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Tuko Tako</title>
+<link rel="icon" type="image/png" href="icon.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,6 +25,10 @@
           <div class="label">NEXT</div>
           <canvas id="next" width="120" height="180"></canvas>
         </div>
+        <div class="panel">
+          <div class="label">MUSIC</div>
+          <button id="musicBtn" title="Switch track">MUSIC: MAIN MENU</button>
+        </div>
         <div class="controls">
           <p><b>&larr; &rarr;</b> Move</p>
           <p><b>&uarr;</b> / <b>X</b> Rotate</p>
@@ -36,6 +41,7 @@
 
     <div id="overlay" class="show">
       <div class="modal">
+        <img src="icon.png" alt="Tuko Tako" class="modal-icon">
         <h2>TUKO TAKO</h2>
         <p class="tag">Match 4 or more squares of the same color.<br>Chain them for a big score!</p>
         <button id="startBtn">START</button>
