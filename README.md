@@ -28,8 +28,21 @@ chains for huge points, and beat your high score!
 | <kbd>Z</kbd>               | Rotate counter-clockwise |
 | <kbd>&darr;</kbd>          | Soft drop      |
 | <kbd>Space</kbd>           | Hard drop      |
+| <kbd>C</kbd>               | Hold piece     |
 
 On-screen touch buttons are included for mobile play.
+
+## Presentation
+
+- One-canvas layout with a **piece preview queue** (next 3) and a **hold** slot.
+- **Ghost piece** drop indicator and active-column highlight.
+- Particle bursts, chain flashes, leveling and a level progress bar.
+- **CRT + RF filter** (WebGL): replicates a `crt-geom` look (screen curvature,
+  aperture-grille shadow mask, scanlines, vignette) together with a
+  `crt-guest-advanced` NTSC/RF look (color fringing, animated RF static,
+  horizontal ringing echo and phosphor afterglow). Toggle it with the
+  **DISPLAY** button in-game; it silently falls back to a plain render if WebGL
+  is unavailable.
 
 ## Sound
 
@@ -37,8 +50,10 @@ On-screen touch buttons are included for mobile play.
 - **SNES Rainbow Road** — *Mario Kart 7 Soundtrack - SNES Rainbow Road*
 - Cycle between tracks with the **MUSIC** button in-game.
 
-Switch tracks anytime during play. A synthesized game-over jingle plays when
-you top out.
+Switch tracks anytime during play. All in-game sound effects (move, rotate,
+drop, hold, clear, chain, game over) are synthesized in the browser with a
+16-bit **SNES-style** Web Audio engine (pulse + sub-oscillator tones and a
+band-limited noise channel).
 
 ## Credits
 

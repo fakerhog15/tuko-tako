@@ -10,24 +10,16 @@
 <body>
   <div id="app">
     <div id="stage">
-      <canvas id="board" width="360" height="720"></canvas>
+      <canvas id="board" width="576" height="660"></canvas>
       <div id="hud">
         <h1 class="logo">TUKO<span>TAKO</span></h1>
         <div class="panel">
-          <div class="label">SCORE</div>
-          <div id="score" class="value">0</div>
-        </div>
-        <div class="panel">
-          <div class="label">CHAIN</div>
-          <div id="chain" class="value">-</div>
-        </div>
-        <div class="panel">
-          <div class="label">NEXT</div>
-          <canvas id="next" width="120" height="180"></canvas>
-        </div>
-        <div class="panel">
           <div class="label">MUSIC</div>
           <button id="musicBtn" title="Switch track">MUSIC: MAIN MENU</button>
+        </div>
+        <div class="panel">
+          <div class="label">DISPLAY</div>
+          <button id="crtBtn" title="Toggle CRT + RF filter">CRT + RF: ON</button>
         </div>
         <div class="controls">
           <p><b>&larr; &rarr;</b> Move</p>
@@ -35,6 +27,7 @@
           <p><b>Z</b> Rotate CCW</p>
           <p><b>&darr;</b> Soft drop</p>
           <p><b>Space</b> Hard drop</p>
+          <p><b>C</b> Hold piece</p>
         </div>
       </div>
     </div>
@@ -57,6 +50,7 @@
     <button data-act="right">&#9654;</button>
     <button data-act="down">&#9660;</button>
     <button data-act="drop">DROP</button>
+    <button data-act="hold">HOLD</button>
   </div>
 
   <audio id="music" src="music.mp3" loop preload="auto"></audio>
