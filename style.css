@@ -136,7 +136,7 @@ button {
 button:hover { background: #fff; }
 button:active { transform: translateY(2px); }
 
-#musicBtn, #crtBtn {
+#musicBtn, #crtBtn, #muteBtn, #pauseBtn {
   width: 100%;
   font-size: 12px;
   letter-spacing: 1px;
@@ -144,8 +144,9 @@ button:active { transform: translateY(2px); }
   color: #fff;
   background: #111;
   border: 2px solid #fff;
+  margin-top: 6px;
 }
-#musicBtn:hover, #crtBtn:hover { background: #ffe000; color: #000; }
+#musicBtn:hover, #crtBtn:hover, #muteBtn:hover, #pauseBtn:hover { background: #ffe000; color: #000; }
 #crtBtn:disabled { color: #666; border-color: #444; cursor: default; }
 #crtBtn:disabled:hover { background: #111; color: #666; }
 

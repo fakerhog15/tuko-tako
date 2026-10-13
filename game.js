@@ -60,15 +60,22 @@
   var startBtn = document.getElementById("startBtn");
   var music = document.getElementById("music");
   var musicBtn = document.getElementById("musicBtn");
+  var muteBtn = document.getElementById("muteBtn");
+  var pauseBtn = document.getElementById("pauseBtn");
   var crtBtn = document.getElementById("crtBtn");
   var stage = document.getElementById("stage");
   var audioCtx = null;
 
   var TRACKS = [
     { name: "MAIN MENU", src: "music.mp3" },
-    { name: "SNES RAINBOW ROAD", src: "music2.mp3" }
+    { name: "SNES RAINBOW ROAD", src: "music2.mp3" },
+    { name: "CV BLOODLINES - STAGE 1", src: "music3.mp3" },
+    { name: "CV PORTRAIT OF RUIN", src: "music4.mp3" },
+    { name: "NINJA WARRIORS - BOSS 2", src: "music5.mp3" },
+    { name: "NINJA WARRIORS - BOSS 5", src: "music6.mp3" }
   ];
   var trackIndex = 0;
+  var musicMuted = false;
 
   var DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -491,6 +498,7 @@
   }
 
   function playMusic() {
+    if (musicMuted) { stopMusic(); return; }
     if (music.src.indexOf(TRACKS[trackIndex].src) === -1) {
       music.src = TRACKS[trackIndex].src;
     }
@@ -504,7 +512,23 @@
   }
 
   function updateMusicBtn() {
-    if (musicBtn) musicBtn.textContent = "MUSIC: " + TRACKS[trackIndex].name;
+    if (musicBtn) musicBtn.textContent = "TRACK: " + TRACKS[trackIndex].name;
+  }
+
+  function updateMuteBtn() {
+    if (muteBtn) muteBtn.textContent = "MUSIC: " + (musicMuted ? "OFF" : "ON");
+  }
+
+  function loadMute() {
+    try { if (localStorage.getItem("tukotako.music") === "off") musicMuted = true; } catch (e) {}
+  }
+
+  function toggleMute() {
+    musicMuted = !musicMuted;
+    try { localStorage.setItem("tukotako.music", musicMuted ? "off" : "on"); } catch (e) {}
+    updateMuteBtn();
+    if (musicMuted) stopMusic();
+    else if (state === "playing" || state === "busy") playMusic();
   }
 
   function cycleTrack(e) {
@@ -515,10 +539,28 @@
     updateMusicBtn();
   }
 
+  function togglePause() {
+    if (state === "playing") {
+      state = "paused";
+      stopMusic();
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      draw();
+    } else if (state === "paused") {
+      state = "playing";
+      playMusic();
+      lastTime = performance.now();
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(loop);
+    }
+    if (pauseBtn) pauseBtn.textContent = (state === "paused") ? "RESUME" : "PAUSE";
+  }
+
   // ---------- game flow ----------
   function gameOver() {
     state = "over";
     piece = null;
+    if (pauseBtn) pauseBtn.textContent = "PAUSE";
     stopMusic();
     gameOverSound();
     overlay.querySelector(".modal").innerHTML =
@@ -541,6 +583,7 @@
     chainFlash = 0;
     overlay.classList.remove("show");
     state = "playing";
+    if (pauseBtn) pauseBtn.textContent = "PAUSE";
     spawnPiece();
     ensureAudio();
     playMusic();
@@ -908,6 +951,14 @@
       drawPair(nextQueue[q], GX + GRID_W + NEXT_W / 2, BAND + 26 + q * (2 * CELL + 10));
     }
 
+    // pause overlay
+    if (state === "paused") {
+      ctx.fillStyle = "rgba(0,0,0,0.72)";
+      ctx.fillRect(0, 0, W, H);
+      drawText("PAUSED", W / 2, H / 2 - 14, 44, "#ffffff");
+      drawText("Press ENTER to resume", W / 2, H / 2 + 30, 16, "#ffe000");
+    }
+
     present();
   }
 
@@ -1008,6 +1059,10 @@
     } else if (k === " ") {
       if (state === "playing") hardDrop();
       e.preventDefault();
+    } else if (k === "Enter") {
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      togglePause();
+      e.preventDefault();
     }
   });
 
@@ -1030,6 +1085,7 @@
       else if (act === "down") softDrop = true;
       else if (act === "drop") hardDrop();
       else if (act === "hold") doHold();
+      else if (act === "pause") togglePause();
     }
     btn.addEventListener("touchstart", fire, { passive: false });
     btn.addEventListener("mousedown", fire);
@@ -1044,7 +1100,6 @@
     if (document.hidden) stopMusic();
     else if (state === "playing" || state === "busy") playMusic();
   });
-
   // fit to window
   function fit() {
     if (!stage) return;
@@ -1058,6 +1113,19 @@
   if (musicBtn) {
     musicBtn.addEventListener("click", cycleTrack);
     updateMusicBtn();
+  }
+  if (muteBtn) {
+    muteBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      toggleMute();
+    });
+    updateMuteBtn();
+  }
+  if (pauseBtn) {
+    pauseBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      togglePause();
+    });
   }
   if (crtBtn) {
     if (!crt) {
@@ -1079,6 +1147,8 @@
   }
 
   // boot
+  loadMute();
+  updateMuteBtn();
   emptyBoard();
   refillQueue();
   draw();

@@ -1,7 +1,7 @@
 # TUKO TAKO
 
 <p align="center">
-  <img src="icon.png?v=8" alt="Tuko Tako" width="260">
+  <img src="icon.png?v=9" alt="Tuko Tako" width="260">
 </p>
 
 A fast, sharp-cornered puzzle game in the style of **Puyo Puyo**. Pair up
@@ -29,6 +29,7 @@ chains for huge points, and beat your high score!
 | <kbd>&darr;</kbd>          | Soft drop      |
 | <kbd>Space</kbd>           | Hard drop      |
 | <kbd>C</kbd>               | Hold piece     |
+| <kbd>Enter</kbd>           | Pause / resume |
 
 On-screen touch buttons are included for mobile play.
 
@@ -49,9 +50,17 @@ On-screen touch buttons are included for mobile play.
 
 ## Sound
 
+Six background tracks:
+
 - **Main Menu** — *Mario Kart 7 Soundtrack - Main Menu*
 - **SNES Rainbow Road** — *Mario Kart 7 Soundtrack - SNES Rainbow Road*
-- Cycle between tracks with the **MUSIC** button in-game.
+- **CV Bloodlines - Stage 1** — *Castlevania Bloodlines - Reincarnated Soul Part 2 (Stage 1)*
+- **CV Portrait of Ruin** — *Castlevania Portrait of Ruin - Bloodlines Bequethed*
+- **Ninja Warriors - Boss 2** — *The Ninja Warriors - Boss 2*
+- **Ninja Warriors - Boss 5** — *The Ninja Warriors - Boss 5*
+
+- Cycle between tracks with the **TRACK** button in-game.
+- Turn music on/off with the **MUSIC** button (choice is remembered).
 
 Switch tracks anytime during play. All in-game sound effects (move, rotate,
 drop, hold, clear, chain, game over) are synthesized in the browser with a
@@ -60,6 +69,7 @@ band-limited noise channel).
 
 ## Credits
 
-- Music: *Mario Kart 7* soundtrack (Nintendo)
+- Music: *Mario Kart 7*, *Castlevania: Bloodlines*, *Castlevania: Portrait of Ruin*,
+  *The Ninja Warriors* (Nintendo / Konami / Taito)
 - Font: Iosevka Nerd Font Mono
 - Built with plain HTML5 Canvas + JavaScript — no dependencies.
