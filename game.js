@@ -18,13 +18,29 @@
   var GY = BAND;             // grid origin y
 
   var COLORS = [
-    { name: "blue",   fill: "#1e6bff", edge: "#9fc2ff" },
-    { name: "green",  fill: "#16c60c", edge: "#a8f5a2" },
-    { name: "red",    fill: "#e02020", edge: "#ffb0b0" },
-    { name: "black",  fill: "#0b0b0b", edge: "#ffffff" },
-    { name: "white",  fill: "#ffffff", edge: "#c9c9c9" },
-    { name: "yellow", fill: "#ffe000", edge: "#fff7b0" }
+    { name: "blue",    fill: "#1e6bff", edge: "#9fc2ff" },   // 0
+    { name: "green",   fill: "#16c60c", edge: "#a8f5a2" },   // 1
+    { name: "red",     fill: "#e02020", edge: "#ffb0b0" },   // 2
+    { name: "black",   fill: "#0b0b0b", edge: "#ffffff" },   // 3
+    { name: "white",   fill: "#ffffff", edge: "#c9c9c9" },   // 4
+    { name: "yellow",  fill: "#ffe000", edge: "#fff7b0" },   // 5
+    { name: "purple",  fill: "#8a2be2", edge: "#d9b3ff" },   // 6  rgb(138,43,226)
+    { name: "orange",  fill: "#ffaa00", edge: "#ffe0a0" },   // 7  rgb(255,170,0)
+    { name: "grey",    fill: "#808080", edge: "#d0d0d0" },   // 8
+    { name: "navy",    fill: "#0f52ba", edge: "#a8c4ff" },   // 9  rgb(15,82,186)
+    { name: "azure",   fill: "#0095ff", edge: "#b0ddff" },   // 10 rgb(0,149,255)
+    { name: "sky",     fill: "#38b6ff", edge: "#c6e9ff" },   // 11 rgb(56,182,255)
+    { name: "teal",    fill: "#00e699", edge: "#a8ffe0" },   // 12 rgb(0,230,153)
+    { name: "crimson", fill: "#dc143c", edge: "#ffb0c0" }    // 13 rgb(220,20,60)
   ];
+
+  // difficulty: number of distinct block colors in play + fall-speed multiplier
+  var MODES = {
+    easy:   { name: "EASY",   colors: [0, 1, 2, 5], speed: 1.45 },
+    medium: { name: "MEDIUM", colors: [0, 1, 2, 5, 6, 7], speed: 1.0 },
+    hard:   { name: "HARD",   colors: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], speed: 0.72 }
+  };
+  var MODE_ORDER = ["easy", "medium", "hard"];
 
   var OFFSETS = [ [0, -1], [1, 0], [0, 1], [-1, 0] ];
 
@@ -67,6 +83,8 @@
   var volumeSlider = document.getElementById("volumeSlider");
   var volumeVal = document.getElementById("volumeVal");
   var crtBtn = document.getElementById("crtBtn");
+  var modeBtn = document.getElementById("modeBtn");
+  var colorsInfo = document.getElementById("colorsInfo");
   var stage = document.getElementById("stage");
   var audioCtx = null;
 
@@ -107,6 +125,10 @@
   var CRT_LABEL = { rf: "CRT + RF", crt: "CRT", off: "OFF" };
   var crtMode = "rf";
 
+  // difficulty mode (easy | medium | hard), chosen by the MODE button.
+  var currentMode = "medium";
+  var activeColors = MODES.medium.colors;
+
   // settings persist under "veltris.*"; old "tukotako.*" keys are migrated once.
   var STORE_PREFIX = "veltris.";
   var LEGACY_PREFIX = "tukotako.";
@@ -122,6 +144,37 @@
   }
   function storeSet(key, val) {
     try { localStorage.setItem(STORE_PREFIX + key, val); } catch (e) {}
+  }
+
+  function loadMode() {
+    try {
+      var q = (location.search.match(/[?&]mode=([a-z]+)/i) || [])[1];
+      if (q && MODES[q.toLowerCase()]) return q.toLowerCase();
+    } catch (e) {}
+    var s = storeGet("mode");
+    if (s && MODES[s]) return s;
+    return "medium";
+  }
+
+  function applyMode(m) {
+    currentMode = MODES[m] ? m : "medium";
+    activeColors = MODES[currentMode].colors;
+  }
+
+  function cycleMode() {
+    var next = MODE_ORDER[(MODE_ORDER.indexOf(currentMode) + 1) % MODE_ORDER.length];
+    applyMode(next);
+    storeSet("mode", currentMode);
+    updateModeBtn();
+    if (state !== "playing" && state !== "busy") {
+      refillQueue();
+      draw();
+    }
+  }
+
+  function updateModeBtn() {
+    if (modeBtn) modeBtn.textContent = "MODE: " + MODES[currentMode].name;
+    if (colorsInfo) colorsInfo.textContent = activeColors.length + " COLORS";
   }
 
   function loadCrtMode() {
@@ -197,7 +250,7 @@
   }
 
   function randColor() {
-    return Math.floor(Math.random() * COLORS.length);
+    return activeColors[Math.floor(Math.random() * activeColors.length)];
   }
 
   function makePair() {
@@ -319,7 +372,7 @@
     return (score % LEVEL_UP) / LEVEL_UP;
   }
   function dropInterval() {
-    return softDrop ? 45 : DROP_TABLE[level()];
+    return softDrop ? 45 : DROP_TABLE[level()] * MODES[currentMode].speed;
   }
 
   // ---------- matching / clearing (Puyo rules) ----------
@@ -1435,6 +1488,12 @@
       togglePause();
     });
   }
+  if (modeBtn) {
+    modeBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      cycleMode();
+    });
+  }
   if (crtBtn) {
     crtBtn.addEventListener("click", function (e) {
       e.preventDefault();
@@ -1449,6 +1508,8 @@
   // boot
   loadMute();
   updateMuteBtn();
+  applyMode(loadMode());
+  updateModeBtn();
   emptyBoard();
   refillQueue();
   draw();

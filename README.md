@@ -1,7 +1,7 @@
 # VELTRIS
 
 <p align="center">
-  <img src="icon.png?v=13" alt="Veltris" width="260">
+  <img src="icon.png?v=14" alt="Veltris" width="260">
 </p>
 
 A fast, sharp-cornered puzzle game in the style of **Puyo Puyo**. Pair up
@@ -13,11 +13,29 @@ chains for huge points, and beat your high score!
 ## Gameplay
 
 - Blocks fall in pairs of two.
-- Swap between 6 bold colors: **blue, green, red, black, white, yellow**.
 - Match 4+ blocks orthogonally to clear them.
 - Cleared blocks fall away and chain into new matches.
 - Build chains to multiply your score.
 - Game over when blocks reach the top.
+
+## Difficulty
+
+Pick a mode with the **MODE** button in-game (or `?mode=easy|medium|hard`); the
+choice is remembered. Higher modes use more colors and drop faster:
+
+| Mode   | Colors | Fall speed |
+| ------ | ------ | ---------- |
+| Easy   | 4      | slower     |
+| Medium | 6      | normal     |
+| Hard   | 14     | faster     |
+
+## Colors
+
+Blocks are drawn from a palette of bold colors — **blue, green, red, black,
+white, yellow, purple, orange, grey**, plus custom tones
+`rgb(15, 82, 186)`, `rgb(0, 149, 255)`, `rgb(56, 182, 255)`, `rgb(0, 230, 153)`,
+`rgb(138, 43, 226)`, `rgb(255, 170, 0)` and `rgb(220, 20, 60)`. The active mode
+decides how many of them appear at once.
 
 ## Controls
 
