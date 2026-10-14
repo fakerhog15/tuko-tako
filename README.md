@@ -1,7 +1,7 @@
 # VELTRIS
 
 <p align="center">
-  <img src="icon.png?v=14" alt="Veltris" width="260">
+  <img src="icon.png?v=15" alt="Veltris" width="260">
 </p>
 
 A fast, sharp-cornered puzzle game in the style of **Puyo Puyo**. Pair up
@@ -94,5 +94,8 @@ band-limited noise channel).
 
 - Music: *Mario Kart 7*, *Castlevania: Bloodlines*, *Castlevania: Portrait of Ruin*,
   *The Ninja Warriors* (Nintendo / Konami / Taito)
-- Font: Iosevka Nerd Font Mono
+- Font: **Super Mario World 2: Yoshi's Island (Alt)** by Patrick H. Lauke, via
+  [FontStruct](https://fontstruct.com/fontstructions/show/2117618), licensed under
+  [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). License bundled at
+  `fonts/license.txt`.
 - Built with plain HTML5 Canvas + JavaScript — no dependencies.

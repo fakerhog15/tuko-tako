@@ -1,6 +1,6 @@
 @font-face {
-  font-family: "Iosevka Nerd Font Mono";
-  src: url("IosevkaNerdFontMono-Regular.ttf") format("truetype");
+  font-family: "Yoshis Island";
+  src: url("fonts/YoshisIsland.otf?v=15") format("opentype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -19,7 +19,7 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Iosevka Nerd Font Mono", "Courier New", "Lucida Console", monospace;
+  font-family: "Yoshis Island", "Courier New", "Lucida Console", monospace;
   -webkit-font-smoothing: none;
   overflow: hidden;
 }

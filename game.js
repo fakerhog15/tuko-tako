@@ -1159,7 +1159,7 @@
   }
 
   function drawText(str, x, y, size, color, align) {
-    ctx.font = "700 " + size + 'px "Iosevka Nerd Font Mono", "Courier New", monospace';
+    ctx.font = "700 " + size + 'px "Yoshis Island", "Courier New", monospace';
     ctx.textAlign = align || "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = color || "#ffffff";
